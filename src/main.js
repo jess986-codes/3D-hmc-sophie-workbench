@@ -56,7 +56,7 @@ textureLoader.load([
 ]);
 
 const glassMaterial = new THREE.MeshPhysicalMaterial({
-	attenuationColor: "0xffff00",
+	attenuationColor: "yellow",
 	transmission: 1,
 	opacity: 1,
 	metalness: 0,
@@ -73,11 +73,11 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 // model loaders
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath(getAssetPath("/draco/"));
+dracoLoader.setDecoderPath(getAssetPath("draco/"));
 gltfLoader.setDRACOLoader(dracoLoader);
 
 const imageMaterial = textureLoader.load(
-	getAssetPath("/images/pictures/sophie-and-howl.avif")
+	getAssetPath("images/pictures/sophie-and-howl.avif")
 );
 imageMaterial.wrapS = THREE.RepeatWrapping;
 imageMaterial.wrapT = THREE.RepeatWrapping;
@@ -85,11 +85,15 @@ imageMaterial.repeat.set(4, 4);
 
 let windowObject;
 let hatObject;
+let sunraysObject;
 gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 	model.scene.traverse((child) => {
 		if (child.isMesh) {
-			if (child.name.includes("glass") || child.name.includes("rays")) {
+			if (child.name.includes("glass")) {
 				child.material = glassMaterial;
+			} else if (child.name.includes("sunrays")) {
+				child.material = glassMaterial;
+				sunraysObject = child;
 			} else if (child.name.includes("picture")) {
 				child.material = imageMaterial;
 			} else {
@@ -166,9 +170,6 @@ themeToggle.addEventListener("click", () => {
 
 	if (windowObject) {
 		windowObject.visible = lightMode;
+		sunraysObject.visible = lightMode;
 	}
-
-	console.log(camera.position.x, camera.position.y, camera.position.z);
-	console.log(controls.target);
-	console.log("---");
 });
