@@ -18,14 +18,20 @@ camera.position.set(9.192478577573674, 5.141617189684073, 7.67861904910377);
 
 scene.add(camera);
 
+// get correct asset path based on environment
+function getAssetPath(relativePath) {
+	const base = import.meta.env.BASE_URL || ""; // Vite provides this environment variable
+	return `${base}${relativePath}`;
+}
+
 // baked texture loader
 const textureLoader = new THREE.TextureLoader();
 const textureMap = {
-	one: "/images/textures/workbench/TextureOne.webp",
-	two: "/images/textures/workbench/TextureTwo.webp",
-	three: "/images/textures/workbench/TextureThree.webp",
-	four: "/images/textures/workbench/TextureFour.webp",
-	five: "/images/textures/workbench/TextureFive.webp",
+	one: getAssetPath("images/textures/workbench/TextureOne.webp"),
+	two: getAssetPath("images/textures/workbench/TextureTwo.webp"),
+	three: getAssetPath("images/textures/workbench/TextureThree.webp"),
+	four: getAssetPath("images/textures/workbench/TextureFour.webp"),
+	five: getAssetPath("images/textures/workbench/TextureFive.webp"),
 };
 
 const loadedTextures = {};
@@ -37,16 +43,17 @@ Object.entries(textureMap).forEach(([key, path]) => {
 });
 
 // transparent texture
-const environmentMap =
-	new THREE.CubeTextureLoader().setPath("/images/textures/skybox/") /
-	textureLoader.load([
-		"/images/textures/skybox/px.webp",
-		"/images/textures/skybox/nx.webp",
-		"/images/textures/skybox/py.webp",
-		"/images/textures/skybox/ny.webp",
-		"/images/textures/skybox/pz.webp",
-		"/images/textures/skybox/nz.webp",
-	]);
+const environmentMap = new THREE.CubeTextureLoader().setPath(
+	getAssetPath("images/textures/skybox/")
+);
+textureLoader.load([
+	getAssetPath("images/textures/skybox/px.webp"),
+	getAssetPath("images/textures/skybox/nx.webp"),
+	getAssetPath("images/textures/skybox/py.webp"),
+	getAssetPath("images/textures/skybox/ny.webp"),
+	getAssetPath("images/textures/skybox/pz.webp"),
+	getAssetPath("images/textures/skybox/nz.webp"),
+]);
 
 const glassMaterial = new THREE.MeshPhysicalMaterial({
 	attenuationColor: "0xffff00",
@@ -64,7 +71,6 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 });
 
 // model loaders
-let gltfModel;
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("/draco/");
@@ -79,8 +85,7 @@ imageMaterial.repeat.set(4, 4);
 
 let windowObject;
 let hatObject;
-gltfLoader.load("/models/workbench-model.glb", (model) => {
-	gltfModel = model.scene;
+gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 	model.scene.traverse((child) => {
 		if (child.isMesh) {
 			if (child.name.includes("glass") || child.name.includes("rays")) {
