@@ -73,11 +73,11 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 // model loaders
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath("/draco/");
+dracoLoader.setDecoderPath(getAssetPath("/draco/"));
 gltfLoader.setDRACOLoader(dracoLoader);
 
 const imageMaterial = textureLoader.load(
-	"/images/pictures/sophie-and-howl.avif"
+	getAssetPath("/images/pictures/sophie-and-howl.avif")
 );
 imageMaterial.wrapS = THREE.RepeatWrapping;
 imageMaterial.wrapT = THREE.RepeatWrapping;
