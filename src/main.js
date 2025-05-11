@@ -12,18 +12,20 @@ const canvas = document.querySelector("canvas.webgl-canvas");
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#E7D0BD");
 
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
-camera.position.z = 5;
+const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height);
+
+camera.position.set(9.192478577573674, 5.141617189684073, 7.67861904910377);
+
 scene.add(camera);
 
 // baked texture loader
 const textureLoader = new THREE.TextureLoader();
 const textureMap = {
-	one: "/textures/workbench/TextureOne.webp",
-	two: "/textures/workbench/TextureTwo.webp",
-	three: "/textures/workbench/TextureThree.webp",
-	four: "/textures/workbench/TextureFour.webp",
-	five: "/textures/workbench/TextureFive.webp",
+	one: "/images/textures/workbench/TextureOne.webp",
+	two: "/images/textures/workbench/TextureTwo.webp",
+	three: "/images/textures/workbench/TextureThree.webp",
+	four: "/images/textures/workbench/TextureFour.webp",
+	five: "/images/textures/workbench/TextureFive.webp",
 };
 
 const loadedTextures = {};
@@ -35,15 +37,15 @@ Object.entries(textureMap).forEach(([key, path]) => {
 });
 
 // transparent texture
-const environmentMap = new THREE.CubeTextureLoader()
-	.setPath("/textures/skybox/")
-	.load([
-		"/textures/skybox/px.webp",
-		"/textures/skybox/nx.webp",
-		"/textures/skybox/py.webp",
-		"/textures/skybox/ny.webp",
-		"/textures/skybox/pz.webp",
-		"/textures/skybox/nz.webp",
+const environmentMap =
+	new THREE.CubeTextureLoader().setPath("/images/textures/skybox/") /
+	textureLoader.load([
+		"/images/textures/skybox/px.webp",
+		"/images/textures/skybox/nx.webp",
+		"/images/textures/skybox/py.webp",
+		"/images/textures/skybox/ny.webp",
+		"/images/textures/skybox/pz.webp",
+		"/images/textures/skybox/nz.webp",
 	]);
 
 const glassMaterial = new THREE.MeshPhysicalMaterial({
@@ -62,16 +64,29 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 });
 
 // model loaders
+let gltfModel;
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath("/draco/");
 gltfLoader.setDRACOLoader(dracoLoader);
 
+const imageMaterial = textureLoader.load(
+	"/images/pictures/sophie-and-howl.avif"
+);
+imageMaterial.wrapS = THREE.RepeatWrapping;
+imageMaterial.wrapT = THREE.RepeatWrapping;
+imageMaterial.repeat.set(4, 4);
+
+let windowObject;
+let hatObject;
 gltfLoader.load("/models/workbench-model.glb", (model) => {
+	gltfModel = model.scene;
 	model.scene.traverse((child) => {
 		if (child.isMesh) {
 			if (child.name.includes("glass") || child.name.includes("rays")) {
 				child.material = glassMaterial;
+			} else if (child.name.includes("picture")) {
+				child.material = imageMaterial;
 			} else {
 				Object.keys(textureMap).forEach((key) => {
 					if (child.name.toLowerCase().includes(key)) {
@@ -84,11 +99,19 @@ gltfLoader.load("/models/workbench-model.glb", (model) => {
 							child.material.map.minFilter = THREE.LinearFilter;
 						}
 					}
+
+					if (child.name.includes("window_light")) {
+						windowObject = child;
+					}
+
+					if (child.name.includes("hat")) {
+						hatObject = child;
+					}
 				});
 			}
 		}
-		scene.add(model.scene);
 	});
+	scene.add(model.scene);
 });
 
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
@@ -96,7 +119,31 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.minDistance = 1;
+controls.maxDistance = 20;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2;
+controls.minAzimuthAngle = 0;
+controls.maxAzimuthAngle = Math.PI / 2;
+
 controls.update();
+controls.target.set(
+	-0.05454917167656999,
+	1.3365694143010431,
+	-0.659865346643258
+);
+
+// listeners
+addEventListener("resize", (event) => {
+	sizes.width = window.innerWidth;
+	sizes.height = window.innerHeight;
+
+	camera.aspect = sizes.width / sizes.height;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize(sizes.width, sizes.height);
+	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
 
 const loop = () => {
 	controls.update();
@@ -105,3 +152,18 @@ const loop = () => {
 };
 
 loop();
+
+let lightMode = true;
+const themeToggle = document.querySelector(".btn.theme-toggle");
+themeToggle.addEventListener("click", () => {
+	themeToggle.classList.toggle("dark-theme");
+	lightMode = !lightMode;
+
+	if (windowObject) {
+		windowObject.visible = lightMode;
+	}
+
+	console.log(camera.position.x, camera.position.y, camera.position.z);
+	console.log(controls.target);
+	console.log("---");
+});
