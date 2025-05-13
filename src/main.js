@@ -1,7 +1,9 @@
+import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
-import * as THREE from "three";
+import { setupResizeHandler } from "./scripts/listeners.js";
+import { loadingManager } from "./scripts/loadingManager.js";
 
 const sizes = {
 	width: window.innerWidth,
@@ -12,9 +14,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color("#E7D0BD");
 
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height);
-
 camera.position.set(9.192478577573674, 5.141617189684073, 7.67861904910377);
-
 scene.add(camera);
 
 // get correct asset path based on environment
@@ -24,7 +24,7 @@ function getAssetPath(relativePath) {
 }
 
 // baked texture loader
-const textureLoader = new THREE.TextureLoader();
+const textureLoader = new THREE.TextureLoader(loadingManager);
 const textureMap = {
 	one: getAssetPath("images/textures/workbench/TextureOne.webp"),
 	two: getAssetPath("images/textures/workbench/TextureTwo.webp"),
@@ -70,8 +70,8 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 });
 
 // model loaders
-const gltfLoader = new GLTFLoader();
-const dracoLoader = new DRACOLoader();
+const gltfLoader = new GLTFLoader(loadingManager);
+const dracoLoader = new DRACOLoader(loadingManager);
 dracoLoader.setDecoderPath(getAssetPath("draco/"));
 gltfLoader.setDRACOLoader(dracoLoader);
 
@@ -85,6 +85,7 @@ imageMaterial.repeat.set(4, 4);
 let windowObject;
 let hatObject;
 let sunraysObject;
+let bookObject;
 gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 	model.scene.traverse((child) => {
 		if (child.isMesh) {
@@ -115,6 +116,10 @@ gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 					if (child.name.includes("hat")) {
 						hatObject = child;
 					}
+
+					if (child.name.includes("book")) {
+						bookObject = child;
+					}
 				});
 			}
 		}
@@ -142,18 +147,14 @@ controls.target.set(
 );
 
 // listeners
-addEventListener("resize", (event) => {
-	sizes.width = window.innerWidth;
-	sizes.height = window.innerHeight;
-
-	camera.aspect = sizes.width / sizes.height;
-	camera.updateProjectionMatrix();
-
-	renderer.setSize(sizes.width, sizes.height);
-	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-});
+setupResizeHandler(sizes, camera, renderer);
 
 const loop = () => {
+	if (bookObject) {
+		bookObject.position.z += 0.001;
+		bookObject.rotation.x += 0.002;
+	}
+
 	controls.update();
 	renderer.render(scene, camera);
 	window.requestAnimationFrame(loop);
