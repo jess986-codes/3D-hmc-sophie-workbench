@@ -1,4 +1,5 @@
 @use "./reset.scss";
+@import "./variables.scss";
 
 * {
 	margin: 0;
@@ -15,13 +16,61 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 
+.loading-screen {
+	position: absolute;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	background-color: $color-secondary;
+	text-align: center;
+
+	&.hidden {
+		display: none;
+	}
+
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+
+		h1 {
+			font-size: 32px;
+			font-weight: 500;
+		}
+
+		.loading-text {
+			font-size: 24px;
+		}
+
+		.progress-bar-container {
+			overflow: hidden;
+			margin: 20px 0;
+			width: 100%;
+			height: 10px;
+			border-radius: 5px;
+			background-color: $color-white;
+
+			.progress-bar {
+				width: 0;
+				height: 100%;
+				transition: width 0.2s ease-in-out;
+				background-color: $color-primary;
+			}
+		}
+	}
+}
+
 .btn {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	border: 4px solid green;
+	border: 4px solid $color-primary-dark;
 	border-radius: 10px;
-	background-color: lightgreen;
+	background-color: $color-primary;
 	cursor: pointer;
 
 	&.theme-toggle {
@@ -36,6 +85,10 @@
 	.theme-toggle__icon {
 		width: 70%;
 		height: auto;
+
+		path {
+			fill: $color-primary-dark;
+		}
 
 		&--moon {
 			display: none;
