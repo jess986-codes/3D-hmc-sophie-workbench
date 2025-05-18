@@ -4,6 +4,12 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { setupResizeHandler } from "./scripts/listeners.js";
 import { loadingManager } from "./scripts/loadingManager.js";
+import {
+	moveThread,
+	threadAnimationState,
+} from "./scripts/animations/threadAnimation.js";
+
+import MoveAnimation from "./scripts/animations/moveAnimation.js";
 
 const sizes = {
 	width: window.innerWidth,
@@ -69,6 +75,13 @@ const glassMaterial = new THREE.MeshPhysicalMaterial({
 	lightMapIntensity: 1,
 });
 
+const sunRayMaterial = new THREE.MeshPhysicalMaterial({
+	color: "#e9e795",
+	emissive: "#eecbaa",
+	transparent: true,
+	opacity: 0.15,
+});
+
 // model loaders
 const gltfLoader = new GLTFLoader(loadingManager);
 const dracoLoader = new DRACOLoader(loadingManager);
@@ -86,13 +99,18 @@ let windowObject;
 let hatObject;
 let sunraysObject;
 let bookObject;
+let threadObject;
+let drawerObject;
+const drawerGroup = new THREE.Group();
+const drawerMeshes = [];
+const raycasterObjects = [];
 gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 	model.scene.traverse((child) => {
 		if (child.isMesh) {
 			if (child.name.includes("glass")) {
 				child.material = glassMaterial;
 			} else if (child.name.includes("sunrays")) {
-				child.material = glassMaterial;
+				child.material = sunRayMaterial;
 				sunraysObject = child;
 			} else if (child.name.includes("picture")) {
 				child.material = imageMaterial;
@@ -108,23 +126,72 @@ gltfLoader.load(getAssetPath("models/workbench-model.glb"), (model) => {
 							child.material.map.minFilter = THREE.LinearFilter;
 						}
 					}
-
-					if (child.name.includes("window_light")) {
-						windowObject = child;
-					}
-
-					if (child.name.includes("hat")) {
-						hatObject = child;
-					}
-
-					if (child.name.includes("book")) {
-						bookObject = child;
-					}
 				});
+			}
+
+			if (child.name.includes("window_light")) {
+				windowObject = child;
+			}
+
+			if (child.name.includes("hat")) {
+				hatObject = child;
+			}
+
+			if (child.name.includes("book")) {
+				const bookInitialPosition = child.position.clone();
+				const bookFinalPosition = new THREE.Vector3(
+					bookInitialPosition.x,
+					bookInitialPosition.y,
+					bookInitialPosition.z + 0.3
+				);
+
+				bookObject = new MoveAnimation(
+					child,
+					bookInitialPosition,
+					bookFinalPosition
+				);
+			}
+
+			if (child.name.includes("thread")) {
+				threadObject = child;
+				threadObject.userData.initialPosition =
+					threadObject.position.clone();
+				threadObject.userData.finalPosition = new THREE.Vector3(
+					threadObject.userData.initialPosition.x + 0.1,
+					threadObject.userData.initialPosition.y,
+					threadObject.userData.initialPosition.z + 0.1
+				);
+			}
+
+			if (
+				child.name.includes("drawer") ||
+				child.name.includes("target_6") ||
+				child.name.includes("target_7")
+			) {
+				drawerMeshes.push(child);
+			}
+
+			if (child.name.includes("target")) {
+				raycasterObjects.push(child);
 			}
 		}
 	});
+
+	drawerMeshes.forEach((mesh) => drawerGroup.add(mesh));
+	const drawerInitialPosition = drawerGroup.position.clone();
+	const drawerFinalPosition = new THREE.Vector3(
+		drawerInitialPosition.x,
+		drawerInitialPosition.y,
+		drawerInitialPosition.z - 0.39
+	);
+	drawerObject = new MoveAnimation(
+		drawerGroup,
+		drawerInitialPosition,
+		drawerFinalPosition
+	);
+
 	scene.add(model.scene);
+	scene.add(drawerGroup);
 });
 
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
@@ -146,21 +213,44 @@ controls.target.set(
 	-0.659865346643258
 );
 
+// raycaster
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+const onPointerClick = (event) => {
+	pointer.x = (event.clientX / sizes.width) * 2 - 1;
+	pointer.y = -(event.clientY / sizes.height) * 2 + 1;
+
+	raycaster.setFromCamera(pointer, camera);
+	const intersects = raycaster.intersectObjects(raycasterObjects);
+	if (intersects.length > 0) {
+		const objectName = intersects[0].object.name;
+		console.log(objectName);
+		if (objectName.includes("book") && !bookObject.isAnimating) {
+			bookObject.moveObject();
+		}
+
+		if (objectName.includes("drawer") && !drawerObject.isAnimating) {
+			drawerObject.moveObject();
+		}
+	}
+};
+
 // listeners
 setupResizeHandler(sizes, camera, renderer);
+window.addEventListener("mousedown", onPointerClick);
 
-const loop = () => {
-	if (bookObject) {
-		bookObject.position.z += 0.001;
-		bookObject.rotation.x += 0.002;
+const renderLoop = () => {
+	if (threadObject && !threadAnimationState.isAnimating) {
+		moveThread(threadObject);
 	}
 
 	controls.update();
 	renderer.render(scene, camera);
-	window.requestAnimationFrame(loop);
+	window.requestAnimationFrame(renderLoop);
 };
 
-loop();
+renderLoop();
 
 let lightMode = true;
 const themeToggle = document.querySelector(".btn.theme-toggle");

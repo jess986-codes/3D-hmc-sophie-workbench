@@ -15,16 +15,13 @@ loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
 };
 
 loadingManager.onLoad = () => {
-	loadingText.textContent = "Starting scene...";
-
 	setTimeout(() => {
 		loadingScreen.classList.add("hidden");
 	}, 500);
 };
 
 loadingManager.onError = (url) => {
-	loadingText.textContent =
-		"Error loading assets. Please refresh the page TT TT";
+	loadingText.textContent = `Error loading: ${url}. Please refresh the page TT TT`;
 };
 
 export { loadingManager };
