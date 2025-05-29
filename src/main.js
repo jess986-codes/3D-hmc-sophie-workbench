@@ -9,7 +9,7 @@ import {
 	threadAnimationState,
 } from "./scripts/animations/threadAnimation.js";
 
-import MoveAnimation from "./scripts/animations/moveAnimation.js";
+import MoveAnimation from "./scripts/animations/MoveAnimation.js";
 
 const sizes = {
 	width: window.innerWidth,
